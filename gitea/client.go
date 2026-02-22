@@ -40,9 +40,14 @@ func (c *Client) getURL(endpoint string) string {
 	return fmt.Sprintf("%s%s%s", c.serverURL, c.endpoints["basePath"], endpoint)
 }
 
+// GetOrgs returns a list of orgs in the gitea instance
 func (c *Client) GetOrgs() []structs.Organization {
 	endpoint := c.endpoints["orgs"]
 	url := c.getURL(endpoint)
+	return fetchAPI[structs.Organization](c, url)
+}
+
+func fetchAPI[T any](c *Client, url string) []T {
 	logMsg := fmt.Sprintf("Calling: %s", url)
 	c.logger.Info(logMsg)
 	req := c.createRequest(url)
@@ -60,42 +65,20 @@ func (c *Client) GetOrgs() []structs.Organization {
 		c.logger.Error(errorMsg, "URL", url, "StatusCode", resp.StatusCode, "Status", resp.Status)
 		return nil
 	}
-	var orgs []structs.Organization
-	if err = json.NewDecoder(resp.Body).Decode(&orgs); err != nil {
+	var result []T
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		errorMsg := "Error decoding response"
 		c.logger.Error(errorMsg, "Error", err)
 		return nil
 	}
-	return orgs
+	return result
 }
 
+// GetRepos returns a list of repos for the given org
 func (c *Client) GetRepos(org string) []structs.Repository {
 	endpoint := fmt.Sprintf(c.endpoints["repos"], org)
 	url := c.getURL(endpoint)
-	logMsg := fmt.Sprintf("Calling: %s", url)
-	c.logger.Info(logMsg)
-	req := c.createRequest(url)
-	httpClient := http.Client{}
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		errorMsg := "Error during request"
-		c.logger.Error(errorMsg, "Error", err)
-		return nil
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorMsg := fmt.Sprintf("Received: %s", resp.Status)
-		c.logger.Error(errorMsg, "URL", url, "StatusCode", resp.StatusCode, "Status", resp.Status)
-		return nil
-	}
-	var repos []structs.Repository
-	if err = json.NewDecoder(resp.Body).Decode(&repos); err != nil {
-		errorMsg := "Error decoding response"
-		c.logger.Error(errorMsg, "Error", err)
-		return nil
-	}
-	return repos
+	return fetchAPI[structs.Repository](c, url)
 }
 
 func (c *Client) createRequest(url string) *http.Request {

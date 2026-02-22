@@ -144,6 +144,6 @@ func (h *Handler) getOrgRepos(target string, org string) []structs.Repository {
 
 func (h *Handler) getRepos(target string, org []structs.Organization) {
 	for _, o := range org {
-		h.getOrgRepos(target, o.FullName)
+		h.getOrgRepos(target, o.UserName)
 	}
 }
