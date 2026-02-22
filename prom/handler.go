@@ -50,15 +50,15 @@ func NewHandler(configFile string, logger *slog.Logger) *Handler {
 func (h *Handler) init() {
 	h.collectors = make(map[string]prometheus.Collector)
 	h.collectors["orgs"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "gitea_organizations_count",
+		Name: "gitea_organizations_total",
 		Help: "Gives the total number of orgs in the gitea instance",
 	}, []string{"target"})
 	h.collectors["org_members"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "gitea_organization_members_count",
+		Name: "gitea_organization_members_total",
 		Help: "Gives the total number of members in each organization",
 	}, []string{"target", "organization"})
 	h.collectors["repos"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "gitea_repositories_count",
+		Name: "gitea_repositories_total",
 		Help: "Gives the total number of repos in the gitea instance per org",
 	}, []string{"target", "organization"})
 	h.collectors["pull_requests"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -107,7 +107,13 @@ func (h *Handler) ProbeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orgs := h.getOrgs(targetParam)
-	h.getRepos(targetParam, orgs)
+	for _, org := range orgs {
+		h.getOrgMembers(targetParam, org.UserName)
+		h.getOrgRepos(targetParam, org.UserName)
+
+		repos := h.getOrgRepos(targetParam, org.UserName)
+		h.getPullRequests(targetParam, org.UserName, repos)
+	}
 
 	httpHandler := promhttp.HandlerFor(h.registry, promhttp.HandlerOpts{})
 	httpHandler.ServeHTTP(w, r)
@@ -140,13 +146,6 @@ func (h *Handler) getOrgRepos(target string, org string) []structs.Repository {
 	return repos
 }
 
-func (h *Handler) getRepos(target string, org []structs.Organization) {
-	for _, o := range org {
-		repos := h.getOrgRepos(target, o.UserName)
-		h.getPullRequests(target, o.UserName, repos)
-	}
-}
-
 func (h *Handler) getPullRequests(target string, org string, repos []structs.Repository) {
 	for _, r := range repos {
 		prs := h.getRepositoryPullRequests(target, org, r.Name)
@@ -161,6 +160,9 @@ func (h *Handler) getRepositoryPullRequests(target string, org string, repo stri
 	h.registry.Register(gauge)
 	gauge.WithLabelValues(target, org, repo).Set(float64(pullRequestsTotal))
 
+	if pullRequestsTotal == 0 {
+		return pullRequests
+	}
 	createdAtGauge := h.collectors["gitea_pull_request_created_at_seconds"].(*prometheus.GaugeVec)
 	h.registry.Register(createdAtGauge)
 	for _, pr := range pullRequests {
