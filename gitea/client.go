@@ -33,7 +33,9 @@ func (c *Client) init() {
 	c.endpoints = make(map[string]string)
 	c.endpoints["basePath"] = "/api/v1"
 	c.endpoints["orgs"] = "/orgs"
+	c.endpoints["org_members"] = "/orgs/%s/members"
 	c.endpoints["repos"] = "/orgs/%s/repos"
+	c.endpoints["pull_requests"] = "/repos/%s/%s/pulls?state=open"
 }
 
 func (c *Client) getURL(endpoint string) string {
@@ -45,6 +47,27 @@ func (c *Client) GetOrgs() []structs.Organization {
 	endpoint := c.endpoints["orgs"]
 	url := c.getURL(endpoint)
 	return fetchAPI[structs.Organization](c, url)
+}
+
+// GetOrgMembers returns a list of members for the given org
+func (c *Client) GetOrgMembers(org string) []structs.User {
+	endpoint := fmt.Sprintf(c.endpoints["org_members"], org)
+	url := c.getURL(endpoint)
+	return fetchAPI[structs.User](c, url)
+}
+
+// GetRepos returns a list of repos for the given org
+func (c *Client) GetRepos(org string) []structs.Repository {
+	endpoint := fmt.Sprintf(c.endpoints["repos"], org)
+	url := c.getURL(endpoint)
+	return fetchAPI[structs.Repository](c, url)
+}
+
+// GetPullRequests returns a list of pull requests for the given repo
+func (c *Client) GetPullRequests(owner string, repo string) []structs.PullRequest {
+	endpoint := fmt.Sprintf(c.endpoints["pull_requests"], owner, repo)
+	url := c.getURL(endpoint)
+	return fetchAPI[structs.PullRequest](c, url)
 }
 
 func fetchAPI[T any](c *Client, url string) []T {
@@ -72,13 +95,6 @@ func fetchAPI[T any](c *Client, url string) []T {
 		return nil
 	}
 	return result
-}
-
-// GetRepos returns a list of repos for the given org
-func (c *Client) GetRepos(org string) []structs.Repository {
-	endpoint := fmt.Sprintf(c.endpoints["repos"], org)
-	url := c.getURL(endpoint)
-	return fetchAPI[structs.Repository](c, url)
 }
 
 func (c *Client) createRequest(url string) *http.Request {
