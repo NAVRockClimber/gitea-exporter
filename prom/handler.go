@@ -5,12 +5,12 @@ import (
 	"gitea-exporter/gitea"
 	"log/slog"
 	"net/http"
-	"os"
+	"slices"
+	"time"
 
 	"code.gitea.io/gitea/modules/structs"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.yaml.in/yaml/v2"
 )
 
 // Handler handle prometheus queries
@@ -20,15 +20,6 @@ type Handler struct {
 	registry   *prometheus.Registry
 	collectors map[string]prometheus.Collector
 	client     *gitea.Client
-}
-
-// Targets is map of probing targets
-type Targets map[string]Server
-
-// Server struct describe a gitea server
-type Server struct {
-	URL   string `yaml:"url"`
-	Token string `yaml:"token"`
 }
 
 type collectorDescription struct {
@@ -49,6 +40,10 @@ func NewHandler(configFile string, logger *slog.Logger) *Handler {
 
 func (h *Handler) init() {
 	h.collectors = make(map[string]prometheus.Collector)
+	h.collectors["duration"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "gitea_probe_duration_seconds",
+		Help: "Duration of the probe in seconds",
+	}, []string{"target"})
 	h.collectors["orgs"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "gitea_organizations_total",
 		Help: "Gives the total number of orgs in the gitea instance",
@@ -71,21 +66,6 @@ func (h *Handler) init() {
 	}, []string{"target", "organization", "repository", "pull_request_id", "poster_username"})
 }
 
-func readConfig(configFile string) Targets {
-	file, err := os.Open(configFile)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	var targets Targets
-	d := yaml.NewDecoder(file)
-	if err = d.Decode(&targets); err != nil {
-		panic(err)
-	}
-	return targets
-}
-
 // ProbeHandler handles the incoming prometheus queries
 func (h *Handler) ProbeHandler(w http.ResponseWriter, r *http.Request) {
 	targetParam := r.URL.Query().Get("target")
@@ -101,10 +81,9 @@ func (h *Handler) ProbeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.registry = prometheus.NewRegistry()
+	h.client = gitea.NewGiteaClient(target.URL, target.Token, h.logger)
 
-	if h.client == nil {
-		h.client = gitea.NewGiteaClient(target.URL, target.Token, h.logger)
-	}
+	startTime := time.Now()
 
 	orgs := h.getOrgs(targetParam)
 	for _, org := range orgs {
@@ -114,6 +93,10 @@ func (h *Handler) ProbeHandler(w http.ResponseWriter, r *http.Request) {
 		repos := h.getOrgRepos(targetParam, org.UserName)
 		h.getPullRequests(targetParam, org.UserName, repos)
 	}
+	duration := time.Since(startTime).Seconds()
+	durationGauge := h.collectors["duration"].(*prometheus.GaugeVec)
+	h.registry.Register(durationGauge)
+	durationGauge.WithLabelValues(targetParam).Set(duration)
 
 	httpHandler := promhttp.HandlerFor(h.registry, promhttp.HandlerOpts{})
 	httpHandler.ServeHTTP(w, r)
@@ -121,10 +104,24 @@ func (h *Handler) ProbeHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getOrgs(target string) []structs.Organization {
 	orgs := h.client.GetOrgs()
+	orgs = h.excludeOrgs(orgs, target)
 	orgsTotal := len(orgs)
 	gauge := h.collectors["orgs"].(*prometheus.GaugeVec)
 	h.registry.Register(gauge)
 	gauge.WithLabelValues(target).Set(float64(orgsTotal))
+	return orgs
+}
+
+func (h *Handler) excludeOrgs(orgs []structs.Organization, target string) []structs.Organization {
+	excludeOrgs := h.Targets[target].ExcludeOrgs
+	if len(excludeOrgs) == 0 {
+		return orgs
+	}
+	for _, excludeOrg := range excludeOrgs {
+		orgs = slices.DeleteFunc(orgs, func(org structs.Organization) bool {
+			return org.UserName == excludeOrg
+		})
+	}
 	return orgs
 }
 
