@@ -1,0 +1,8 @@
+git:
+  url: https://git.kraetge.net
+  tokenEnvName: GIT_TOKEN
+git-ext:
+  url: https://git-ext.brillux.de
+  tokenEnvName: GIT_EXT_TOKEN
+  excludeOrgs:
+    - "DevOps-Test"
