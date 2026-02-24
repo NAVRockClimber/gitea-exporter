@@ -7,7 +7,8 @@ RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/server .
 
 FROM gcr.io/distroless/base-debian13:nonroot
-COPY --from=builder /app/server /server
+WORKDIR /app
+COPY --from=builder /app/server /app/server
 USER nonroot:nonroot
 EXPOSE 8080
-ENTRYPOINT ["/server"]
+ENTRYPOINT ["/app/server"]
