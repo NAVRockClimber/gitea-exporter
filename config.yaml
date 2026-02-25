@@ -1,6 +1,6 @@
 git:
-  url: https://git.kraetge.net
-  tokenEnvName: GIT_TOKEN
+  url: https://git.brillux.de
+  tokenEnvName: GIT_INT_TOKEN
 git-ext:
   url: https://git-ext.brillux.de
   tokenEnvName: GIT_EXT_TOKEN
