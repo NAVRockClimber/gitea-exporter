@@ -2,7 +2,7 @@
     "imageBuilds": [
         {
             "dockerfile": "Dockerfile",
-            "imageName": "harbor.brillux.de/devops/gitea-exporter",
+            "imageName": "harbor.brillux.de/devops/gitea-metrics-provider",
             "registryCredentialName": "creds-harbor-bx",
             "k8sManifestRepository": "https://git.brillux.de/devops/k8s-infrastructure.git",
 			"k8sEnvironmentBaseFolder": "gitea-metrics-provider/environments",
