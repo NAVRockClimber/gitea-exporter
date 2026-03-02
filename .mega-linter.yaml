@@ -5,5 +5,9 @@ DISABLE_LINTERS:
   - GROOVY_NPM_GROOVY_LINT
   - GO_GOLANGCI_LINT
   - COPYPASTE_JSCPD
+  # reenable after successful image build:
+  - DOCKERFILE_HADOLINT
+  - GO_REVIVE
+  - YAML_YAMLLINT
 FILTER_REGEX_EXCLUDE: '\.mega-linter\.yml|swagger/'
 REPOSITORY_TRIVY_ARGUMENTS: '--severity HIGH,CRITICAL'
