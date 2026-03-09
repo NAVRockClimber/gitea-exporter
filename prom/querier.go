@@ -72,10 +72,12 @@ func (q *querier) fetchAll() {
 		repos := q.getOrgRepos(org.UserName)
 		q.getPullRequests(org.UserName, repos)
 	}
-	duration := time.Since(startTime).Seconds()
+	duration := time.Since(startTime)
+	durationSeconds := duration.Seconds()
 	durationGauge := q.collectors["duration"].(*prometheus.GaugeVec)
 	q.registry.Register(durationGauge)
-	durationGauge.WithLabelValues(q.targetName).Set(duration)
+	durationGauge.WithLabelValues(q.targetName).Set(durationSeconds)
+	q.logger.Info("Scrape finished", "duration", duration)
 }
 
 func (q *querier) getOrgs() []structs.Organization {
@@ -122,7 +124,7 @@ func (q *querier) getOrgRepos(org string) []structs.Repository {
 func (q *querier) getPullRequests(org string, repos []structs.Repository) {
 	for _, r := range repos {
 		prs := q.getRepositoryPullRequests(q.targetName, org, r.Name)
-		q.logger.Info(fmt.Sprintf("Org: %s, Repo: %s, PRs: %d", org, r.Name, len(prs)))
+		q.logger.Info("Finished processing repository", "org", org, "repo", r.Name, "prs", len(prs))
 	}
 }
 
