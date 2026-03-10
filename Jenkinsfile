@@ -2,6 +2,6 @@
 
 runPipeline {
      language = 'GOLANG'
-     type = 'INTERNAL'
+     type = 'EXTERNAL'
      settingsfile = '.jenkins\\settings.json'
 }
