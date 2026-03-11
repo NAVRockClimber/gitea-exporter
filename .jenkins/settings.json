@@ -4,7 +4,7 @@
             "dockerfile": "Dockerfile",
             "imageName": "harbor.brillux.de/devops/gitea-metrics-provider",
             "registryCredentialName": "creds-harbor-bx",
-            "k8sManifestRepository": "git@git-ext.brillux.de:devops/k8s-environments.git",
+            "k8sManifestRepository": "https://git-ext.brillux.de/devops/k8s-environments.git",
 			"k8sEnvironmentBaseFolder": "gitea-metrics-provider/environments",
             "k8sTagKey": "imageTag"
         }
