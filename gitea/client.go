@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"code.gitea.io/gitea/modules/structs"
+	"gitea.dev/modules/structs"
 )
 
 // Client provides methods for querying the gitea api

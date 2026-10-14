@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"code.gitea.io/gitea/modules/structs"
+	"gitea.dev/modules/structs"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

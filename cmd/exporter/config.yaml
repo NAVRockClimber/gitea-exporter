@@ -1,0 +1,13 @@
+listenAddress: ":9115"
+scrapeInterval: 1h
+
+output:
+  mode: prometheus
+  otlpEndpoint: ""
+
+servers:
+  git-ext:
+    url: https://git-ext.brillux.de
+    tokenEnvName: GIT_EXT_TOKEN
+    excludeOrgs:
+      - DevOps-Test
