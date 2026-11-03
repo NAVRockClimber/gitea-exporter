@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	code.gitea.io/gitea/modules/structs v0.0.0-20190610152049-835b53fc259c
 	github.com/prometheus/client_golang v1.24.1
-	go.yaml.in/yaml/v2 v2.4.4
+	go.yaml.in/yaml/v2 v2.4.5
 )
 
 require (
